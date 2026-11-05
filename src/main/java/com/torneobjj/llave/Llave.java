@@ -3,7 +3,6 @@ package com.torneobjj.llave;
 import com.torneobjj.modelo.Categoria;
 import com.torneobjj.modelo.Combate;
 import com.torneobjj.modelo.Participante;
-import com.torneobjj.modelo.Resultado;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -240,12 +239,7 @@ public class Llave {
     }
 
     private static void repetirResultado(Combate viejo, Combate nuevo) {
-        Resultado r = viejo.getResultado();
-        switch (r.tipo()) {
-            case SUMISION -> nuevo.registrarSumision(r.ganador());
-            case DECISION_ARBITRO -> nuevo.registrarDecisionArbitro(r.marcador1(), r.marcador2(), r.ganador());
-            default -> nuevo.registrarPorPuntos(r.marcador1(), r.marcador2());
-        }
+        nuevo.registrar(viejo.getResultado());
     }
 
     // ----------------------------------------------------------------- generación de rondas

@@ -109,6 +109,32 @@ class TorneoTest {
     }
 
     @Test
+    void cambiarNombreYFecha() {
+        torneo.inscribir(competidor("1", "A", "A", 2008)); // 18 en 2026
+        torneo.setNombre("  Copa de verano ");
+        assertEquals("Copa de verano", torneo.getNombre());
+        assertThrows(IllegalArgumentException.class, () -> torneo.setNombre(" "));
+
+        torneo.cambiarFecha(LocalDate.of(2027, 2, 1));
+        assertEquals(2027, torneo.getAnio());
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> torneo.cambiarFecha(LocalDate.of(2025, 5, 1))); // tendría 17
+        assertTrue(e.getMessage().contains("17"));
+        assertEquals(2027, torneo.getAnio(), "Si falla no cambia");
+    }
+
+    @Test
+    void noSeCambiaLaFechaDespuesDelSorteo() {
+        Participante a = competidor("1", "A", "A", 2000);
+        torneo.inscribir(a);
+        torneo.registrarPeso(a, 85);
+        torneo.sortear();
+        assertThrows(IllegalStateException.class, () -> torneo.cambiarFecha(LocalDate.of(2027, 1, 1)));
+        torneo.cambiarFecha(torneo.getFecha()); // la misma fecha no es un cambio
+        torneo.setNombre("Otro nombre"); // el nombre sí
+    }
+
+    @Test
     void datosDePruebaGeneraUnTorneoSorteable() {
         DatosDePrueba.cargar(torneo, 80, new Random(1));
         assertEquals(80, torneo.getParticipantes().size());

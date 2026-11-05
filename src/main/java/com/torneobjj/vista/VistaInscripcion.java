@@ -244,14 +244,13 @@ class VistaInscripcion implements Vista {
     // ------------------------------------------------------------ listado
 
     private Node listado() {
-        int anio = ventana.getTorneo().getAnio();
         tabla.getColumns().addAll(List.of(
                 Tablas.<Participante, String>columna("DNI", Participante::getDni, 90),
                 Tablas.<Participante, String>columna("Apellido y nombre",
                         p -> p.getApellido() + ", " + p.getNombre(), 180),
-                Tablas.<Participante, Integer>columna("Edad", p -> p.getEdadEnAnio(anio), 55),
+                Tablas.<Participante, Integer>columna("Edad", p -> p.getEdadEnAnio(anio()), 55),
                 Tablas.<Participante, String>columna("División",
-                        p -> p.getCategoria(anio).division().toString(), 80),
+                        p -> p.getCategoria(anio()).division().toString(), 80),
                 Tablas.<Participante, Sexo>columna("Sexo", Participante::getSexo, 85),
                 Tablas.<Participante, Nivel>columna("Nivel", Participante::getNivel, 95),
                 Tablas.<Participante, String>columna("Categoría de peso",
@@ -280,8 +279,13 @@ class VistaInscripcion implements Vista {
         return caja;
     }
 
+    private int anio() {
+        return ventana.getTorneo().getAnio();
+    }
+
     @Override
     public void refrescar() {
+        actualizarInfoEdad();
         boolean sorteado = ventana.getTorneo().estaSorteado();
         avisoSorteo.setVisible(sorteado);
         avisoSorteo.setManaged(sorteado);
