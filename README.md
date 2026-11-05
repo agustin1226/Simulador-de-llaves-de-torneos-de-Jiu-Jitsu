@@ -37,5 +37,5 @@ mvn test
 - [x] Paso 1: modelo y reglas (categorías de edad y peso, pesaje, combates y desempate)
 - [x] Paso 2: sorteo de llaves (W.O., final directa, triangular de 3, eliminación con pase libre)
 - [x] Paso 3: interfaz (JavaFX): inscripción, pesaje, llaves y buscador
-- [ ] Paso 4: carga de resultados
+- [x] Paso 4: carga y corrección de resultados (sumisión, puntos, ventajas, penalidades, decisión del árbitro)
 - [ ] Paso 5: guardar/cargar torneo

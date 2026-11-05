@@ -100,7 +100,9 @@ class VistaBuscador implements Vista {
             return "Fuera (no se pesó)";
         }
         if (!llave.get().estaTerminada()) {
-            return "En competencia";
+            return llave.get().rondaDeEliminacion(p)
+                    .map(r -> "Eliminado en " + r.getNombre())
+                    .orElse("En competencia");
         }
         return llave.get().getPodio().stream()
                 .filter(puesto -> puesto.participante().equals(p))

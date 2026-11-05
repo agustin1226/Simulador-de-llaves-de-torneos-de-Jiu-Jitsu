@@ -244,6 +244,26 @@ class LlaveTest {
     }
 
     @Test
+    void rondaDeEliminacion() {
+        Llave llave = llave(70, 75, 80, 85, 90);
+        Participante p75 = llave.getParticipantes().get(1);
+        Participante p70 = llave.getParticipantes().get(0);
+        assertTrue(llave.rondaDeEliminacion(p75).isEmpty(), "Todavía no peleó");
+
+        llave.getCombatesPendientes().forEach(Competidores::ganaElMasPesado); // pierden 75 y 85
+        assertEquals("Ronda 1", llave.rondaDeEliminacion(p75).orElseThrow().getNombre());
+        assertTrue(llave.rondaDeEliminacion(p70).isEmpty(), "Pasó libre");
+
+        // Quedan 70, 80 y 90 → triangular: 80 vs 90, 70 espera
+        llave.getCombatesPendientes().forEach(Competidores::ganaElMasPesado); // pierde 80
+        Participante p80 = llave.getParticipantes().get(2);
+        assertTrue(llave.rondaDeEliminacion(p80).isEmpty(), "En el triangular perder el primero no elimina");
+
+        llave.getCombatesPendientes().forEach(Competidores::ganaElMasLiviano); // 70 le gana a 80
+        assertEquals("Triangular 2", llave.rondaDeEliminacion(p80).orElseThrow().getNombre());
+    }
+
+    @Test
     void elOrdenDeInscripcionNoCambiaElSorteo() {
         List<Participante> a = conPesos(70, 75, 80, 85, 90, 95, 100);
         List<Participante> b = new ArrayList<>(a);

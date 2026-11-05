@@ -187,7 +187,7 @@ class VistaLlaves implements Vista {
                     List.of(tarjetaTexto("Único competidor de la categoría: campeón por W.O.", null))));
         }
         for (Ronda ronda : llave.getRondas()) {
-            rondas.getChildren().add(columnaRonda(ronda));
+            rondas.getChildren().add(columnaRonda(llave, ronda));
         }
 
         VBox contenido = new VBox(16, new VBox(4, titulo, subtitulo), rondas);
@@ -195,7 +195,9 @@ class VistaLlaves implements Vista {
             contenido.getChildren().add(podio(llave));
         } else {
             Label pendiente = new Label("Combates pendientes en esta ronda: " + llave.getCombatesPendientes().size()
-                    + ". La siguiente ronda se arma sola cuando terminan todos.");
+                    + ". Hacé clic en un combate para cargar el resultado; la siguiente ronda se arma sola "
+                    + "cuando terminan todos.");
+            pendiente.setWrapText(true);
             pendiente.getStyleClass().add("ayuda");
             contenido.getChildren().add(pendiente);
         }
@@ -216,10 +218,10 @@ class VistaLlaves implements Vista {
         };
     }
 
-    private VBox columnaRonda(Ronda ronda) {
+    private VBox columnaRonda(Llave llave, Ronda ronda) {
         List<Node> tarjetas = new java.util.ArrayList<>();
         for (Combate c : ronda.getCombates()) {
-            tarjetas.add(tarjetaCombate(c));
+            tarjetas.add(tarjetaCombate(llave, ronda, c));
         }
         if (ronda.getLibre() != null) {
             String texto = ronda.getNombre().startsWith("Triangular") ? "Descansa" : "Pasa libre";
@@ -240,14 +242,58 @@ class VistaLlaves implements Vista {
         return columna;
     }
 
-    private VBox tarjetaCombate(Combate c) {
+    private VBox tarjetaCombate(Llave llave, Ronda ronda, Combate c) {
         VBox tarjeta = new VBox(filaCompetidor(c, c.getCompetidor1()), filaCompetidor(c, c.getCompetidor2()));
-        tarjeta.getStyleClass().add("combate");
+        tarjeta.getStyleClass().addAll("combate", "combate-clic");
         Resultado r = c.getResultado();
-        Label pie = new Label(r == null ? "Pendiente" : descripcionResultado(r));
+        Label pie = new Label(r == null ? "Pendiente  ·  clic para cargar el resultado" : descripcionResultado(r));
         pie.getStyleClass().add(r == null ? "combate-pendiente" : "combate-resultado");
         tarjeta.getChildren().add(pie);
+        javafx.scene.control.Tooltip.install(tarjeta, new javafx.scene.control.Tooltip(
+                r == null ? "Cargar resultado" : "Corregir resultado"));
+        tarjeta.setOnMouseClicked(e -> {
+            if (c.estaTerminado()) {
+                corregir(llave, ronda, c);
+            } else {
+                cargar(ronda, c);
+            }
+        });
         return tarjeta;
+    }
+
+    // ------------------------------------------------------------ resultados
+
+    private void cargar(Ronda ronda, Combate c) {
+        DialogoResultado dialogo = new DialogoResultado(c, ronda.getNombre(), raiz.getScene());
+        if (dialogo.showAndWait().filter(b -> b == DialogoResultado.GUARDAR).isPresent()) {
+            ventana.datosCambiaron();
+        }
+    }
+
+    /**
+     * El resultado nuevo se carga en un combate aparte; recién al guardar se reemplaza
+     * en la llave. Si se cancela, no cambia nada.
+     */
+    private void corregir(Llave llave, Ronda ronda, Combate c) {
+        if (!llave.puedeAnular(c)) {
+            Alert alerta = new Alert(Alert.AlertType.INFORMATION,
+                    "Ya hay resultados cargados en las rondas siguientes. Para corregir este combate, "
+                            + "primero corregí (o anulá) esos resultados, empezando por el último.");
+            alerta.setHeaderText("No se puede corregir este combate");
+            alerta.showAndWait();
+            return;
+        }
+        boolean hayRondaSiguiente = !llave.getRondas().get(llave.getRondas().size() - 1).equals(ronda);
+        if (hayRondaSiguiente && !confirmar("Corregir resultado",
+                "La ronda siguiente se armó con este resultado. Si cambia el ganador, se vuelve a armar.")) {
+            return;
+        }
+        Combate copia = new Combate(c.getCompetidor1(), c.getCompetidor2());
+        DialogoResultado dialogo = new DialogoResultado(copia, ronda.getNombre() + " · corrección", raiz.getScene());
+        if (dialogo.showAndWait().filter(b -> b == DialogoResultado.GUARDAR).isPresent()) {
+            llave.corregirResultado(c, copia);
+            ventana.datosCambiaron();
+        }
     }
 
     /** Ej.: "Sumisión", "Puntos · 4 a 2", "Ventajas · 0 a 0 (V 2-1)". */
