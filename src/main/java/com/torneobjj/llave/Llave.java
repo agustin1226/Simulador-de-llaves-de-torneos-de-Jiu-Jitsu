@@ -3,6 +3,7 @@ package com.torneobjj.llave;
 import com.torneobjj.modelo.Categoria;
 import com.torneobjj.modelo.Combate;
 import com.torneobjj.modelo.Participante;
+import com.torneobjj.modelo.Resultado;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -117,6 +118,134 @@ public class Llave {
 
     public boolean contiene(Participante p) {
         return participantes.contains(p);
+    }
+
+    /**
+     * Si el competidor ya quedó afuera, devuelve la ronda en la que perdió por última vez.
+     * Vacío si sigue en competencia, si no es de esta llave o si la llave terminó
+     * (en ese caso conviene mirar el podio).
+     * En el triangular, perder el primer combate no elimina: todavía pelea contra el más liviano.
+     */
+    public Optional<Ronda> rondaDeEliminacion(Participante p) {
+        avanzar();
+        if (campeon != null || !contiene(p)) {
+            return Optional.empty();
+        }
+        for (int i = rondas.size() - 1; i >= 0; i--) {
+            Ronda r = rondas.get(i);
+            if (p.equals(r.getLibre())) {
+                return Optional.empty();
+            }
+            for (Combate c : r.getCombates()) {
+                if (c.participa(p)) {
+                    return p.equals(c.getPerdedor()) ? Optional.of(r) : Optional.empty();
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    // ----------------------------------------------------------------- corrección de resultados
+
+    /**
+     * Indica si se puede anular el resultado de ese combate: tiene que estar terminado
+     * y ninguna ronda posterior puede tener resultados cargados.
+     */
+    public boolean puedeAnular(Combate combate) {
+        avanzar();
+        int indice = indiceDeRonda(combate);
+        if (indice < 0 || !combate.estaTerminado()) {
+            return false;
+        }
+        for (int i = indice + 1; i < rondas.size(); i++) {
+            if (rondas.get(i).getCombates().stream().anyMatch(Combate::estaTerminado)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Anula el resultado de un combate para poder cargarlo de nuevo.
+     * Las rondas que se habían armado a partir de ese resultado se descartan.
+     *
+     * @return el combate que quedó pendiente en su lugar (mismos competidores)
+     */
+    public Combate anularResultado(Combate combate) {
+        if (!puedeAnular(combate)) {
+            throw new IllegalStateException(indiceDeRonda(combate) < 0
+                    ? "El combate no pertenece a esta llave"
+                    : "No se puede anular: primero hay que anular los resultados de las rondas siguientes");
+        }
+        int indice = indiceDeRonda(combate);
+        List<List<Combate>> anteriores = new ArrayList<>();
+        for (int i = 0; i <= indice; i++) {
+            anteriores.add(rondas.get(i).getCombates());
+        }
+
+        // Se vuelve a armar la llave desde cero y se repiten los resultados en el mismo orden.
+        // El sorteo es determinístico, así que cada combate queda en la misma ronda y posición.
+        // (Se busca por posición y no por competidores: en el triangular puede haber revancha.)
+        rondas.clear();
+        triangular = null;
+        campeon = null;
+        subcampeon = null;
+        terceros.clear();
+        avanzar();
+
+        Combate reemplazo = null;
+        for (int i = 0; i < anteriores.size(); i++) {
+            List<Combate> viejos = anteriores.get(i);
+            for (int j = 0; j < viejos.size(); j++) {
+                Combate viejo = viejos.get(j);
+                Combate nuevo = rondas.get(i).getCombates().get(j);
+                if (!nuevo.getCompetidor1().equals(viejo.getCompetidor1())
+                        || !nuevo.getCompetidor2().equals(viejo.getCompetidor2())) {
+                    throw new IllegalStateException("No se pudo reconstruir la llave");
+                }
+                if (viejo == combate) {
+                    reemplazo = nuevo;
+                } else if (viejo.estaTerminado()) {
+                    repetirResultado(viejo, nuevo);
+                }
+                avanzar();
+            }
+        }
+        return reemplazo;
+    }
+
+    /**
+     * Reemplaza el resultado de un combate terminado por el de {@code corregido}
+     * (un combate aparte, con los mismos competidores, donde se cargó el resultado nuevo).
+     * Así, si el usuario cancela la corrección, la llave no se toca.
+     */
+    public void corregirResultado(Combate original, Combate corregido) {
+        if (!corregido.estaTerminado()
+                || !corregido.getCompetidor1().equals(original.getCompetidor1())
+                || !corregido.getCompetidor2().equals(original.getCompetidor2())) {
+            throw new IllegalArgumentException("La corrección tiene que ser del mismo cruce y con resultado");
+        }
+        Combate reemplazo = anularResultado(original);
+        repetirResultado(corregido, reemplazo);
+        avanzar();
+    }
+
+    private int indiceDeRonda(Combate combate) {
+        for (int i = 0; i < rondas.size(); i++) {
+            if (rondas.get(i).getCombates().contains(combate)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static void repetirResultado(Combate viejo, Combate nuevo) {
+        Resultado r = viejo.getResultado();
+        switch (r.tipo()) {
+            case SUMISION -> nuevo.registrarSumision(r.ganador());
+            case DECISION_ARBITRO -> nuevo.registrarDecisionArbitro(r.marcador1(), r.marcador2(), r.ganador());
+            default -> nuevo.registrarPorPuntos(r.marcador1(), r.marcador2());
+        }
     }
 
     // ----------------------------------------------------------------- generación de rondas

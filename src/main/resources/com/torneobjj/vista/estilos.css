@@ -165,3 +165,24 @@
 
 /* El menú del encabezado mantiene el texto oscuro */
 .encabezado .menu-button .label { -fx-text-fill: -color-texto; }
+
+/* Combates clickeables */
+.combate-clic { -fx-cursor: hand; }
+.combate-clic:hover { -fx-border-color: -color-primario; -fx-background-color: #f0f5fc; }
+
+/* Diálogo de resultado */
+.dialogo-resultado { -fx-padding: 8; }
+.dialogo-resultado > .content { -fx-padding: 20 24 8 24; }
+.grilla-marcador { -fx-hgap: 10; -fx-vgap: 10; }
+.panel-arbitro {
+    -fx-background-color: -color-advertencia-fondo;
+    -fx-background-radius: 6;
+    -fx-padding: 12;
+}
+.vista-previa {
+    -fx-background-color: #e8eef7;
+    -fx-text-fill: -color-primario-oscuro;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-padding: 10 12 10 12;
+}
