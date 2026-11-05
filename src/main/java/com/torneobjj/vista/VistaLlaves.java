@@ -117,6 +117,11 @@ class VistaLlaves implements Vista {
         return alerta.showAndWait().filter(b -> b == ButtonType.OK).isPresent();
     }
 
+    void olvidarResaltado() {
+        resaltado = null;
+        categorias.getSelectionModel().clearSelection();
+    }
+
     /** Selecciona la categoría del competidor y lo resalta en la llave. */
     void mostrar(Participante p) {
         resaltado = p;

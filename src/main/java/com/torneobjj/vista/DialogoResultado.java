@@ -290,6 +290,9 @@ class DialogoResultado extends Dialog<ButtonType> {
             return true;
         } catch (IllegalArgumentException | IllegalStateException ex) {
             error.error(ex.getMessage());
+            if (getDialogPane().getScene() != null && getDialogPane().getScene().getWindow() != null) {
+                getDialogPane().getScene().getWindow().sizeToScene();
+            }
             return false;
         }
     }

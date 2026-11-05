@@ -1,7 +1,5 @@
 package com.torneobjj.vista;
 
-import com.torneobjj.servicio.Torneo;
-import java.time.LocalDate;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -11,9 +9,15 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) {
-        Torneo torneo = new Torneo("Torneo de Jiu-Jitsu", LocalDate.now());
-        stage.setTitle("Simulador de llaves – Jiu-Jitsu");
-        stage.setScene(crearEscena(new VentanaPrincipal(torneo)));
+        VentanaPrincipal ventana = new VentanaPrincipal(VentanaPrincipal.torneoInicial());
+        stage.titleProperty().bind(ventana.tituloProperty());
+        stage.setScene(crearEscena(ventana));
+        // Antes de cerrar, ofrecer guardar los cambios
+        stage.setOnCloseRequest(e -> {
+            if (!ventana.confirmarDescartarCambios()) {
+                e.consume();
+            }
+        });
         stage.setMinWidth(1000);
         stage.setMinHeight(650);
         stage.show();

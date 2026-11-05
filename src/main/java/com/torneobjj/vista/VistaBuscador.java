@@ -68,12 +68,11 @@ class VistaBuscador implements Vista {
     }
 
     private void armarTabla() {
-        int anio = ventana.getTorneo().getAnio();
         tabla.getColumns().addAll(List.of(
                 Tablas.<Participante, String>columna("Apellido y nombre",
                         p -> p.getApellido() + ", " + p.getNombre(), 180),
                 Tablas.<Participante, String>columna("DNI", Participante::getDni, 90),
-                Tablas.<Participante, String>columna("Categoría", p -> p.getCategoria(anio).getNombre(), 320),
+                Tablas.<Participante, String>columna("Categoría", p -> p.getCategoria(ventana.getTorneo().getAnio()).getNombre(), 320),
                 Tablas.<Participante, String>columna("Peso", p -> Formato.kg(p.getPesoOficial()), 80),
                 Tablas.<Participante, String>columna("Pesaje", Formato::estadoPesaje, 130),
                 Tablas.<Participante, String>columna("Llave", this::estadoEnLlave, 150)));

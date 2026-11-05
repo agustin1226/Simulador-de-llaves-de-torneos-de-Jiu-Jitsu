@@ -24,18 +24,45 @@ import java.util.Optional;
  */
 public class Torneo {
 
-    private final String nombre;
-    private final LocalDate fecha;
+    private String nombre;
+    private LocalDate fecha;
     private final List<Participante> participantes = new ArrayList<>();
     private Map<Categoria, Llave> llaves = new LinkedHashMap<>();
     private boolean sorteado;
 
     public Torneo(String nombre, LocalDate fecha) {
+        setNombre(nombre);
+        this.fecha = Objects.requireNonNull(fecha, "El torneo necesita una fecha");
+    }
+
+    public void setNombre(String nombre) {
         if (nombre == null || nombre.isBlank()) {
             throw new IllegalArgumentException("El torneo necesita un nombre");
         }
         this.nombre = nombre.trim();
-        this.fecha = Objects.requireNonNull(fecha);
+    }
+
+    /**
+     * Cambia la fecha del torneo. Como la edad depende del año, solo se puede antes del sorteo
+     * y siempre que todos los inscriptos sigan siendo mayores de 18.
+     */
+    public void cambiarFecha(LocalDate nuevaFecha) {
+        Objects.requireNonNull(nuevaFecha, "El torneo necesita una fecha");
+        if (nuevaFecha.equals(fecha)) {
+            return;
+        }
+        verificarSinSortear("cambiar la fecha");
+        for (Participante p : participantes) {
+            if (p.getFechaNacimiento().isAfter(nuevaFecha)) {
+                throw new IllegalArgumentException(p.getNombreCompleto() + " nació después de esa fecha");
+            }
+            int edad = p.getEdadEnAnio(nuevaFecha.getYear());
+            if (DivisionEdad.desdeEdad(edad).isEmpty()) {
+                throw new IllegalArgumentException("Con esa fecha, " + p.getNombreCompleto() + " tendría " + edad
+                        + " años (mínimo " + DivisionEdad.EDAD_MINIMA + ")");
+            }
+        }
+        this.fecha = nuevaFecha;
     }
 
     // ------------------------------------------------------------ inscripción

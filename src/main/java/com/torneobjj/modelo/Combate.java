@@ -54,6 +54,28 @@ public class Combate {
         resultado = new Resultado(elegido, TipoVictoria.DECISION_ARBITRO, m1, m2);
     }
 
+    /**
+     * Vuelve a registrar un resultado ya conocido (al reconstruir una llave o abrir un archivo).
+     * Si es por puntos, el ganador se recalcula y tiene que coincidir con el guardado.
+     */
+    public void registrar(Resultado r) {
+        switch (r.tipo()) {
+            case SUMISION -> registrarSumision(r.ganador());
+            case DECISION_ARBITRO -> registrarDecisionArbitro(r.marcador1(), r.marcador2(), r.ganador());
+            default -> {
+                if (r.marcador1() == null || r.marcador2() == null) {
+                    throw new IllegalArgumentException("Falta el marcador del combate " + this);
+                }
+                ReglaDesempate.Decision d = ReglaDesempate.decidir(competidor1, r.marcador1(), competidor2, r.marcador2())
+                        .orElseThrow(() -> new IllegalArgumentException("El marcador de " + this + " es un empate total"));
+                if (!d.ganador().equals(r.ganador()) || d.tipo() != r.tipo()) {
+                    throw new IllegalArgumentException("El resultado de " + this + " no coincide con su marcador");
+                }
+                registrarPorPuntos(r.marcador1(), r.marcador2());
+            }
+        }
+    }
+
     public boolean estaTerminado() {
         return resultado != null;
     }
